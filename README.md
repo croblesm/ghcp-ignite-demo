@@ -1,10 +1,26 @@
-# GitHub Copilot + MSSQL N+1 Performance Demo
+# 🚀 GitHub Copilot + MSSQL Database Performance Demo
 
-This demo showcases how GitHub Copilot can analyze, detect, and fix an N+1 query performance issue in a Node.js + Prisma + SQL Server application.
+## 🎯 What This Demo Shows
 
-## Scenario
+This demo showcases how **GitHub Copilot Agent mode** can help developers diagnose and fix database performance issues, specifically the classic **N+1 query problem** in a Node.js application.
 
-A simple blog app with Authors and Posts. The React frontend calls a single API endpoint (`GET /api/posts`) that is intentionally slow due to an N+1 query pattern. We'll use GitHub Copilot in Agent mode to diagnose and fix the issue.
+**The Story**: You're a developer who gets complaints about a slow blog posts page. The frontend looks fine, but something's wrong with the database layer. GitHub Copilot helps you investigate, understand, and fix the issue - even if you're not a database expert.
+
+## 🎬 Demo Scenario
+
+- **The Problem**: Blog posts page loading very slowly (~18-20 seconds)
+- **The Stack**: React frontend + Node.js/Express + Prisma ORM + SQL Server
+- **The Culprit**: N+1 query pattern (1 query for posts + N queries for each author)
+- **The Solution**: GitHub Copilot analyzes code AND database to suggest the fix
+
+## 📋 Quick Start for Demo
+
+1. **Setup**: Follow the setup instructions below (5 minutes)
+2. **Run the Demo**: Use the prompts in [`demo-prompts-v2.html`](demo-prompts-v2.html) - open in VS Code and click "Open Preview"
+   - **v2 (Recommended)**: Comprehensive master prompt + optional follow-ups for deep dives
+   - **v1**: Alternative prompts for reference
+3. **Detailed Context**: See [`README.copilot.md`](README.copilot.md) for additional context and demo flow details
+4. **Database Management**: Database scripts and monitoring tools documented below
 
 ## Tech Stack
 
@@ -210,6 +226,63 @@ const posts = await prisma.post.findMany({
 
 This results in **1 optimized query** with a JOIN.
 
+## Database Monitoring Scripts
+
+The project includes database monitoring scripts in `app/backend/scripts/`:
+
+### SQL Scripts
+
+- **`create-database.sql`** - Creates the `blogdb` database
+- **`drop-database.sql`** - Safely drops the database (kills active sessions first)
+
+### Monitoring Scripts
+
+#### `check-blogdb-now.sh` - One-time Database Check
+Quick snapshot of current database activity:
+
+```bash
+chmod +x app/backend/scripts/check-blogdb-now.sh
+./app/backend/scripts/check-blogdb-now.sh
+```
+
+**Shows:**
+- Currently executing queries with duration and status
+- Full query text for active sessions  
+- Connected sessions with connection/idle times
+- Session statistics (total, active, idle)
+
+**Perfect for:** Demo health checks, verifying N+1 queries are running
+
+#### `monitor-blogdb-sessions.sh` - Continuous Monitoring
+Real-time monitoring with alerts for long-running queries:
+
+```bash
+chmod +x app/backend/scripts/monitor-blogdb-sessions.sh
+./app/backend/scripts/monitor-blogdb-sessions.sh
+```
+
+**Configuration:**
+- `INTERVAL_MINUTES=2` - Check frequency (default: 2 minutes)
+- `THRESHOLD_SECONDS=30` - Alert threshold (default: 30 seconds)
+
+**Perfect for:** Tracking demo performance, catching slow queries
+
+**Example output:**
+```
+📊 Report #1 - 2025-11-10 05:15:32
+🚨 Long-Running Query Check (>30s threshold):
+SPID  Started   Duration  Status   Command    CPU_ms  Reads
+52    05:14:58  34s       running  SELECT     1250    145000
+```
+
+## Database Connection Details
+
+- **Server**: `localhost,1434` 
+- **User**: `sa`
+- **Password**: `P@ssw0rd!`
+- **Database**: `blogdb`
+- **Environment**: SQL Server 2025 in Docker container (via MSSQL VS Code extension)
+
 ## Next Steps
 
-See `README.copilot.md` for the specific GitHub Copilot prompts to run through this demo.
+See `README.copilot.md` or use `demo-prompts.html` for the specific GitHub Copilot prompts to run through this demo.

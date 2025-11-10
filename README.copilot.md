@@ -1,45 +1,49 @@
-# GitHub Copilot Demo Prompts
+# GitHub Copilot Demo: Diagnosing Backend Database Performance Issues
 
-This file contains prompts to use with GitHub Copilot (Agent mode) to analyze and fix the N+1 performance issue in this demo app.
+## 📋 Demo Overview
 
-## Context
+**The Scenario**: A developer reports that the blog posts page is loading slowly. Everything looks fine on the frontend, but the database layer is the bottleneck. The app uses Prisma ORM with SQL Server, but the developer isn't a database expert.
 
-This app intentionally includes an N+1 query pattern in the `GET /api/posts` endpoint (`app/backend/src/routes/posts.js`). The endpoint fetches posts and then loops through each post to fetch its author separately, resulting in multiple database round trips.
+**The Challenge**: Identify and fix the N+1 query problem - a classic ORM performance issue where the app makes 1 query to fetch posts, then N separate queries to fetch each post's related data.
 
-## Demo Flow
-
-Follow these prompts in order to showcase GitHub Copilot's capabilities:
-
-### 1. Analyze the Slow Endpoint
-
-```
-@mssql analyze the Express handler for GET /api/posts in `app/backend/src/routes/posts.js` and explain why the call to SQL Server 2025 is slow.
-```
-
-**Expected outcome**: Copilot should identify the loop that makes separate queries for each author.
+**The Solution**: Use GitHub Copilot with the MSSQL extension to analyze both the ORM code and database schema, identify the problem, and suggest optimizations.
 
 ---
 
-### 2. Detect the N+1 Pattern
+## 🎯 How to Run the Demo
 
-```
-Is this Prisma code causing an N+1 pattern? Show me the SQL it likely generates.
-```
+**Use the prompts in [`demo-prompts-v2.html`](demo-prompts-v2.html)** - this is the authoritative source for all GitHub Copilot prompts.
 
-**Expected outcome**: Copilot should explain that:
-- First query: `SELECT * FROM Post`
-- Then N queries: `SELECT * FROM Author WHERE id = ?` (once per post)
+**Options:**
+- **Master Prompt**: One comprehensive prompt that guides you through the entire investigation and fix
+- **Follow-Up Prompts (1-4)**: Optional deeper dives into specific topics (N+1 problem, indexes, monitoring, migrations)
 
 ---
 
-### 3. Request the Optimized Solution
+## 📚 Demo Context
 
-```
-Refactor the Prisma query in `app/backend/src/routes/posts.js` to load authors in a single query using include.
-```
+### The N+1 Problem in This App
 
-**Expected outcome**: Copilot should suggest:
+The `GET /api/posts` endpoint (`app/backend/src/routes/posts.js`) intentionally demonstrates the N+1 pattern:
+
 ```javascript
+// SLOW: N+1 queries
+const posts = await prisma.post.findMany();
+for (let post of posts) {
+  post.author = await prisma.author.findUnique({
+    where: { id: post.authorId }
+  });
+}
+```
+
+With 10,000 posts, this results in **80,000+ database queries** (due to nested N+1 patterns with authors, comments, tags, etc.), making the response time extremely slow - perfect for demonstrating the problem!
+
+### The Fix
+
+Using Prisma's `include()` for eager loading:
+
+```javascript
+// FAST: Single optimized query
 const posts = await prisma.post.findMany({
   include: {
     author: true,
@@ -47,116 +51,91 @@ const posts = await prisma.post.findMany({
 });
 ```
 
----
-
-### 4. Generate Optimized Query for SQL Server
-
-```
-Generate an optimized Prisma query for SQL Server that returns posts and their authors in one round trip.
-```
-
-**Expected outcome**: Similar to above, emphasizing the JOIN behavior.
+This results in **1 optimized query** with JOINs.
 
 ---
 
-### 5. Index Suggestion
+## 🎬 Tips for Presenting
 
-```
-Suggest an index for the Post table to improve lookups by authorId.
-```
+1. **Show the problem first**: Open the React app and check the Network tab. The `/api/posts` call will be very slow (18-20 seconds).
 
-**Expected outcome**: Copilot might suggest that Prisma already creates an index on the foreign key `authorId`, but if needed:
-```sql
-CREATE INDEX idx_post_authorId ON Post(authorId);
-```
+2. **Enable Prisma logging**: Uncomment the Prisma client logging in `app/backend/src/index.js` to see all SQL queries in the console.
 
----
+3. **Copy the master prompt**: Open `demo-prompts-v2.html`, copy the **Master Prompt**, and paste it into GitHub Copilot.
 
-### 6. Full Stack Trace Analysis
+4. **Let Copilot guide you**: Copilot will:
+   - Connect to your database using the MSSQL extension
+   - Analyze the Prisma schema and route handler
+   - Identify the N+1 pattern
+   - Suggest fixes using eager loading
+   - Recommend database indexes
 
-```
-Trace the call from the React component to the Express route to the Prisma query and tell me which part is the bottleneck.
-```
+5. **Apply the fix**: Implement Copilot's suggestion in `posts.js` and restart the backend.
 
-**Expected outcome**: Copilot should trace:
-1. React `App.jsx` → `fetch('/api/posts')`
-2. Express `posts.js` → route handler
-3. Prisma queries → the loop causing N+1
-4. Identify the loop as the bottleneck
+6. **Show the improvement**: Reload the React app and check the Network tab again. Response time should drop dramatically (from 18+ seconds to under 1 second).
+
+7. **Verify with MSSQL extension**: Use the MSSQL extension to run the optimized query and see the execution plan showing efficient index usage.
 
 ---
 
-### 7. Compare Before/After
+## ⚙️ Expected Performance Results
 
-```
-Show me a diff between the N+1 version of GET /api/posts and the optimized version.
-```
+| Metric | N+1 Version | Optimized |
+|--------|------------|-----------|
+| Database Queries | 80,000+ | 1 |
+| Response Time | 18-20 seconds | < 1 second |
+| Backend Console | Hundreds of query logs | Single query log |
 
-**Expected outcome**: Copilot should show:
-- **Before**: Loop with separate `author.findUnique()` calls
-- **After**: Single `post.findMany()` with `include: { author: true }`
-
----
-
-### 8. Database Reset Instructions
-
-```
-I dropped and recreated the blogdb in the SQL Server container. Generate the exact Prisma commands I need to reapply the schema and seed the data.
-```
-
-**Expected outcome**: Copilot should provide:
-```bash
-npx prisma migrate dev
-npm run seed
-```
+The improvement is dramatic and immediately visible!
 
 ---
 
-## Tips for Presenting the Demo
+## 📊 What Copilot Demonstrates
 
-1. **Show the slow response time first**: Load the React app and show the Network tab with the slow `/api/posts` call.
+This demo showcases how GitHub Copilot with the MSSQL extension provides:
 
-2. **Enable Prisma query logging**: In `app/backend/src/index.js`, uncomment the Prisma client logging to show all SQL queries in the console.
+1. **Code Analysis**: Detects N+1 patterns in ORM code
+2. **Database Schema Analysis**: Connects to the database to understand relationships
+3. **Problem Explanation**: Explains N+1 in simple terms for developers new to databases
+4. **Optimization Suggestions**: Recommends eager loading with Prisma `include()`
+5. **Index Recommendations**: Suggests optimal indexes for the schema
+6. **Verification Guidance**: Shows how to verify improvements using the MSSQL extension
 
-3. **Run the prompts one at a time**: Walk through each prompt, showing how Copilot analyzes the code and suggests improvements.
+---
 
-4. **Apply the fix**: After Copilot suggests the optimized code, apply it to `posts.js` and restart the backend.
+## 🔧 Optional Additional Prompts
 
-5. **Show the performance improvement**: Reload the React app and compare the response time (should be much faster).
-
-6. **Bonus**: Use the MSSQL extension to run a query profiler or view the actual SQL queries hitting the database.
-
-## Additional Prompts (Optional)
+After running the master demo, you can use these prompts for deeper exploration:
 
 ### Add Pagination
 
-```
+```text
 Add pagination to the GET /api/posts endpoint with query parameters for page and limit. Update the React component to support pagination.
 ```
 
 ### Add Error Handling
 
-```
+```text
 Add proper error handling to the Express routes and show user-friendly error messages in the React app.
 ```
 
 ### Generate Tests
 
-```
+```text
 Generate Jest tests for the GET /api/posts endpoint that verify the N+1 fix works correctly.
 ```
 
 ### Performance Monitoring
 
-```
+```text
 Add logging middleware to the Express app that tracks the response time for each request and logs slow queries.
 ```
 
 ---
 
-## Expected Performance Results
+## 📖 Additional Resources
 
-- **N+1 version**: 40+ database queries, ~300-500ms response time (depending on network latency)
-- **Optimized version**: 1 database query, ~20-50ms response time
-
-The improvement should be dramatic and immediately visible in both the Network tab and backend console logs.
+- **README.md**: Setup and project structure
+- **demo-prompts-v2.html**: All GitHub Copilot prompts (master + follow-ups)
+- **demo-prompts-v1.html**: Alternative prompts for reference
+- **app/backend/scripts/**: Database management and monitoring tools
