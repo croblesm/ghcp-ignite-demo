@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Author {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.NVarChar(255)
+  email     String   @unique @db.NVarChar(255)
+  bio       String?  @db.NVarChar(Max)
+  createdAt DateTime @default(now())
+  posts     Post[]
+  comments  Comment[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.NVarChar(500)
+  content   String   @db.NVarChar(Max)
+  authorId  Int
+  author    Author   @relation(fields: [authorId], references: [id], onDelete: Cascade, map: "FK_Post_Author")
+  createdAt DateTime @default(now())
+  comments  Comment[]
+  tags      PostTag[]
+
+  // Indexes intentionally removed to worsen performance for demo
+  // @@index([authorId], map: "IDX_Post_AuthorId")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.NVarChar(Max)
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, map: "FK_Comment_Post")
+  authorId  Int
+  author    Author   @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Comment_Author")
+  createdAt DateTime @default(now())
+
+  // Indexes intentionally removed to worsen performance for demo
+  // @@index([postId], map: "IDX_Comment_PostId")
+  // @@index([authorId], map: "IDX_Comment_AuthorId")
+}
+
+model Tag {
+  id    Int       @id @default(autoincrement())
+  name  String    @unique @db.NVarChar(100)
+  posts PostTag[]
+}
+
+model PostTag {
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade, map: "FK_PostTag_Post")
+  tagId  Int
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade, map: "FK_PostTag_Tag")
+
+  @@id([postId, tagId])
+  // Indexes intentionally removed to worsen performance for demo
+  // @@index([postId], map: "IDX_PostTag_PostId")
+  // @@index([tagId], map: "IDX_PostTag_TagId")
+}
