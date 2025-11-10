@@ -1,29 +1,47 @@
-# GitHub Copilot Demo Prompts
+# GitHub Copilot Demo: Diagnosing Backend Database Performance Issues
 
-This file contains prompts to use with GitHub Copilot (Agent mode) to analyze and fix the N+1 performance issue in this demo app.
+## Scenario
 
-## Context
+**The Problem**: A developer receives a report that one of the most frequently used pages is responding slowly. From the app side, everything looks fine - HTTP requests are fast, network latency is low, and frontend responsiveness is not the issue. The problem appears to be in the database layer.
 
-This app intentionally includes an N+1 query pattern in the `GET /api/posts` endpoint (`app/backend/src/routes/posts.js`). The endpoint fetches posts and then loops through each post to fetch its author separately, resulting in multiple database round trips.
+**The Challenge**: The app uses a code-first approach with Prisma ORM, so SQL is generated automatically. The developer is not a database expert and needs help understanding what's causing the slowdown.
 
-## Demo Flow
+**The Solution**: Using GitHub Copilot Agent mode to analyze the ORM code, connect to the database schema, identify the N+1 query pattern, and provide actionable solutions.
 
-Follow these prompts in order to showcase GitHub Copilot's capabilities:
+## Demo Context
 
-### 1. Analyze the Slow Endpoint
+This app intentionally includes an N+1 query pattern in the `GET /api/posts` endpoint (`app/backend/src/routes/posts.js`). The endpoint fetches posts and then loops through each post to fetch its author separately, resulting in multiple database round trips - a classic ORM performance issue.
 
+## Demo Flow: The Developer's Journey
+
+**Role**: You are a developer who has received a performance complaint. You know there's a problem but need GitHub Copilot's help to diagnose and fix it.
+
+Follow these prompts in order to showcase the authentic developer experience:
+
+### 1. The Initial Problem Report
+
+```text
+I'm getting complaints that the main posts page in my app is loading really slowly. The frontend seems fine and the HTTP requests look normal, but something is definitely wrong. Can you help me figure out what's causing this performance issue?
 ```
-@mssql analyze the Express handler for GET /api/posts in `app/backend/src/routes/posts.js` and explain why the call to SQL Server 2025 is slow.
-```
 
-**Expected outcome**: Copilot should identify the loop that makes separate queries for each author.
+**Expected outcome**: Copilot should start investigating the codebase and suggest looking at the database layer.
 
 ---
 
-### 2. Detect the N+1 Pattern
+### 2. Deep Dive into the Slow Endpoint
 
+```text
+I suspect the issue is with the GET /api/posts endpoint. Can you look at the code in `app/backend/src/routes/posts.js` and connect to my local blogdb database to understand why this might be slow? I'm using Prisma ORM so I'm not writing SQL directly.
 ```
-Is this Prisma code causing an N+1 pattern? Show me the SQL it likely generates.
+
+**Expected outcome**: Copilot should analyze the Prisma code, connect to the database, and identify the N+1 pattern by examining both the ORM queries and the database schema.
+
+---
+
+### 3. Understanding What's Actually Happening
+
+```text
+I keep hearing about something called "N+1 queries" but I don't really understand what that means. Is that what's happening here? Can you explain it in simple terms and show me what SQL is actually being generated?
 ```
 
 **Expected outcome**: Copilot should explain that:
@@ -32,13 +50,34 @@ Is this Prisma code causing an N+1 pattern? Show me the SQL it likely generates.
 
 ---
 
-### 3. Request the Optimized Solution
+### 3. Database Performance Analysis
 
-```
-Refactor the Prisma query in `app/backend/src/routes/posts.js` to load authors in a single query using include.
+```text
+My database queries seem really slow. Can you help me figure out if there are any database issues that might be causing this? I'm not sure what to look for.
 ```
 
-**Expected outcome**: Copilot should suggest:
+**Expected outcome**: Copilot should identify missing indexes on foreign keys and suggest optimal index strategy.
+
+---
+
+### 4. Query Execution Plan Analysis
+
+```text
+This specific query is taking forever: SELECT * FROM Post p LEFT JOIN Author a ON p.authorId = a.id. Can you help me understand why it's so slow and what I can do to fix it?
+```
+
+**Expected outcome**: Copilot should show table scans, missing index recommendations, and cost analysis.
+
+---
+
+### 4. Getting the Fix
+
+```text
+Okay, now I understand the problem. How do I fix this? Can you show me how to change my Prisma query to get all the data in one go instead of making all these separate database calls?
+```
+
+**Expected outcome**: Copilot should suggest the include solution:
+
 ```javascript
 const posts = await prisma.post.findMany({
   include: {
@@ -49,32 +88,123 @@ const posts = await prisma.post.findMany({
 
 ---
 
-### 4. Generate Optimized Query for SQL Server
+### 5. Database-Level Investigation
 
-```
-Generate an optimized Prisma query for SQL Server that returns posts and their authors in one round trip.
+```text
+My database queries seem really slow in general. Can you help me figure out if there are any database issues that might be making things worse? I'm not sure what to look for.
 ```
 
-**Expected outcome**: Similar to above, emphasizing the JOIN behavior.
+**Expected outcome**: Copilot should identify missing indexes on foreign keys and suggest optimal index strategy.
 
 ---
 
-### 5. Index Suggestion
+### 6. Understanding Database Performance
 
-```
-Suggest an index for the Post table to improve lookups by authorId.
+```text
+I keep hearing that indexes can make databases faster, but I don't really understand them. Can you look at my database and tell me if I'm missing any important indexes that would help with performance?
 ```
 
-**Expected outcome**: Copilot might suggest that Prisma already creates an index on the foreign key `authorId`, but if needed:
+**Expected outcome**: Copilot should suggest:
+
+---
+
+**Expected outcome**: Copilot should suggest:
+
 ```sql
-CREATE INDEX idx_post_authorId ON Post(authorId);
+-- Covering index for posts with author data
+CREATE NONCLUSTERED INDEX IX_Post_AuthorId_Covering 
+ON Post(authorId) INCLUDE (id, title, content, createdAt);
+
+-- Composite index for comments
+CREATE NONCLUSTERED INDEX IX_Comment_PostId_AuthorId 
+ON Comment(postId, authorId);
 ```
 
 ---
+
+### 7. Overall Database Health
+
+```text
+My database feels sluggish overall. Is there some kind of general maintenance or cleanup I should be doing to keep it running well? I'm not sure what database maintenance even involves.
+```
+
+**Expected outcome**: Copilot should check:
+- Index fragmentation levels
+- Table statistics freshness  
+- Missing statistics recommendations
+- Suggest UPDATE STATISTICS or REBUILD INDEX operations
+
+---
+
+### 8. Investigating a Specific Slow Query
+
+```text
+This specific query is taking forever: SELECT * FROM Post p LEFT JOIN Author a ON p.authorId = a.id. Can you help me understand why it's so slow and what I can do to fix it? I really don't know much about database performance.
+```
+
+**Expected outcome**: Copilot should suggest analyzing the execution plan and then identify:
+- Table scans that could become index seeks
+- Key lookup operations indicating missing covering indexes
+- Sort operations that could benefit from clustered indexes
+- Join strategies and their performance implications
+
+---
+
+### 9. Setting Up Monitoring
+
+```text
+I want to start monitoring my database performance but I don't know where to begin. What should I be tracking to catch performance problems early, and how do I set that up?
+```
+
+**Expected outcome**: A comprehensive performance assessment with:
+
+```sql
+-- Top consuming queries by duration
+SELECT TOP 10
+    total_elapsed_time/execution_count as avg_duration_ms,
+    execution_count,
+    SUBSTRING(st.text, (qs.statement_start_offset/2)+1,
+        ((CASE qs.statement_end_offset
+            WHEN -1 THEN DATALENGTH(st.text)
+            ELSE qs.statement_end_offset
+        END - qs.statement_start_offset)/2) + 1) AS statement_text
+FROM sys.dm_exec_query_stats qs
+CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st
+ORDER BY avg_duration_ms DESC;
+```
+
+---
+
+## Summary: Comprehensive Database Performance Analysis with GitHub Copilot
+
+This demo showcases how GitHub Copilot can work synergistically with the MSSQL extension to provide:
+
+1. **Code-Level Analysis**: Detecting N+1 query patterns and suggesting Prisma optimizations
+2. **Database Schema Analysis**: Using `@mssql` commands to analyze table structures and relationships
+3. **Index Strategy**: Comprehensive indexing recommendations based on query patterns
+4. **Performance Monitoring**: Real-time session monitoring with custom bash scripts
+5. **Query Plan Analysis**: Deep-dive execution plan optimization suggestions
+6. **Baseline Performance**: Establishing monitoring queries for ongoing performance tracking
+
+**Key Takeaway**: By combining GitHub Copilot's code understanding with direct database analysis capabilities, developers can identify performance bottlenecks at both the application and database layers, creating a comprehensive optimization strategy.
+
+---
+
+## Next Steps
+
+After running through this demo:
+
+1. **Apply Index Recommendations**: Implement the suggested composite and covering indexes
+2. **Monitor Query Performance**: Use the performance baseline queries to track improvements
+3. **Iterate on Code Changes**: Apply Copilot's N+1 optimization suggestions
+4. **Automate Monitoring**: Schedule the bash scripts for continuous performance tracking
+5. **Document Findings**: Create a performance optimization playbook based on Copilot's suggestions
+
+The combination of GitHub Copilot's AI-powered analysis with direct database tooling creates a powerful workflow for comprehensive performance optimization.
 
 ### 6. Full Stack Trace Analysis
 
-```
+```text
 Trace the call from the React component to the Express route to the Prisma query and tell me which part is the bottleneck.
 ```
 
@@ -88,7 +218,7 @@ Trace the call from the React component to the Express route to the Prisma query
 
 ### 7. Compare Before/After
 
-```
+```text
 Show me a diff between the N+1 version of GET /api/posts and the optimized version.
 ```
 
@@ -100,7 +230,7 @@ Show me a diff between the N+1 version of GET /api/posts and the optimized versi
 
 ### 8. Database Reset Instructions
 
-```
+```text
 I dropped and recreated the blogdb in the SQL Server container. Generate the exact Prisma commands I need to reapply the schema and seed the data.
 ```
 

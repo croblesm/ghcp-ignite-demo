@@ -14,13 +14,15 @@ const router = express.Router();
  * 4. For EACH comment, fetching its author separately (M queries)
  * 5. For EACH post, fetching its tags separately (N queries)
  *
- * With 10,000 posts and ~6 comments each, this results in:
+ * With 1000 posts (default limit) and ~6 comments each, this results in:
  * - 1 query for posts
- * - 10,000 queries for authors
- * - 10,000 queries for comments
- * - ~60,000 queries for comment authors
- * - 10,000 queries for tags
- * = ~80,000+ SEPARATE DATABASE QUERIES!
+ * - 1,000 queries for authors
+ * - 1,000 queries for comments
+ * - ~6,000 queries for comment authors
+ * - 1,000 queries for tags
+ * = ~9,000+ SEPARATE DATABASE QUERIES!
+ *
+ * Note: You can fetch more by passing ?limit=10000 for the full 80,000+ queries (extremely slow)
  *
  * Additionally, database indexes are removed from foreign keys to make queries slower.
  */
@@ -32,9 +34,11 @@ router.get('/', async (req, res) => {
     let queryCount = 0;
 
     // INTENTIONAL N+1 FOR DEMO PURPOSES
-    // Step 1: Fetch all posts (1 query)
-    console.log('[N+1 VERSION] Fetching posts...');
+    // Step 1: Fetch posts with pagination (1 query) - limited to 1000 for semi-slow demo
+    const limit = parseInt(req.query.limit) || 1000;
+    console.log(`[N+1 VERSION] Fetching ${limit} posts...`);
     const posts = await prisma.post.findMany({
+      take: limit,
       orderBy: {
         createdAt: 'desc',
       },
@@ -80,12 +84,15 @@ router.get('/', async (req, res) => {
     const endTime = Date.now();
     const queryTime = endTime - startTime;
 
-    console.log(`\n========================================`);
-    console.log(`[N+1 VERSION - TERRIBLE PERFORMANCE]`);
-    console.log(`Fetched ${posts.length} posts in ${queryTime}ms`);
-    console.log(`Total database queries: ${queryCount}`);
-    console.log(`Average time per query: ${(queryTime / queryCount).toFixed(2)}ms`);
-    console.log(`========================================\n`);
+    const performanceLog = `
+========================================
+[N+1 VERSION - TERRIBLE PERFORMANCE]
+Fetched ${posts.length} posts in ${queryTime}ms
+Total database queries: ${queryCount}
+Average time per query: ${(queryTime / queryCount).toFixed(2)}ms
+========================================`;
+
+    console.log(performanceLog);
 
     res.json({
       posts,
@@ -94,6 +101,7 @@ router.get('/', async (req, res) => {
         queryTimeMs: queryTime,
         queryCount: queryCount,
         version: 'n+1',
+        performanceLog: performanceLog.trim(),
       },
     });
   } catch (error) {
@@ -102,96 +110,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * OPTIMIZED VERSION (commented out by default)
- *
- * Uncomment this route and comment out the N+1 version above to see the MASSIVE performance improvement.
- *
- * This version uses Prisma's `include` to fetch posts with all related data using efficient JOINs.
- * This results in just a FEW optimized queries instead of 9000+!
- *
- * GitHub Copilot should suggest:
- * 1. Using `include` to fetch related data (reduces queries from ~80,000 to ~2-3)
- * 2. Adding database indexes on foreign keys (improves JOIN performance)
- * 3. Potentially adding pagination to limit the dataset size (CRITICAL with 10k posts!)
- */
-
-/*
-router.get('/', async (req, res) => {
-  const prisma = req.app.locals.prisma;
-
-  try {
-    const startTime = Date.now();
-
-    // OPTIMIZED: Efficient queries with JOINs
-    const posts = await prisma.post.findMany({
-      include: {
-        author: true,
-        comments: {
-          include: {
-            author: true,
-          },
-        },
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    // Transform tags to simpler structure
-    const postsWithTags = posts.map(post => ({
-      ...post,
-      tags: post.tags.map(pt => pt.tag),
-    }));
-
-    const endTime = Date.now();
-    const queryTime = endTime - startTime;
-
-    console.log(`\n========================================`);
-    console.log(`[OPTIMIZED VERSION - GREAT PERFORMANCE]`);
-    console.log(`Fetched ${posts.length} posts in ${queryTime}ms`);
-    console.log(`Estimated queries: 2-3 (using JOINs)`);
-    console.log(`Performance improvement: ${((15000 / queryTime) * 100).toFixed(0)}% faster!`);
-    console.log(`========================================\n`);
-
-    res.json({
-      posts: postsWithTags,
-      meta: {
-        count: posts.length,
-        queryTimeMs: queryTime,
-        queryCount: 2, // Estimated
-        version: 'optimized',
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-    res.status(500).json({ error: 'Failed to fetch posts' });
-  }
-});
-*/
-
-/**
- * GET /api/posts/search
- *
- * Search for posts by comment content
- *
- * CURRENT IMPLEMENTATION: CATASTROPHICALLY BAD N+1 WITH FULL TABLE SCANS
- * This demonstrates the WORST possible way to implement search:
- * 1. Fetch ALL comments (no WHERE clause, full table scan of 60,000+ rows!)
- * 2. Filter comments in JavaScript (not in database)
- * 3. For EACH matching comment, fetch the post (N queries)
- * 4. For EACH post, fetch the author (N queries)
- * 5. For EACH post, fetch ALL its comments (N queries)
- * 6. For EACH comment on each post, fetch the author (M queries)
- * 7. For EACH post, fetch tags (N queries)
- *
- * With no indexes and full table scans of 60K+ comments, this will be EXCRUCIATINGLY SLOW!
- */
 router.get('/search', async (req, res) => {
   const prisma = req.app.locals.prisma;
   const { q } = req.query;
@@ -260,13 +178,16 @@ router.get('/search', async (req, res) => {
     const endTime = Date.now();
     const queryTime = endTime - startTime;
 
-    console.log(`\n========================================`);
-    console.log(`[SEARCH N+1 VERSION - CATASTROPHIC PERFORMANCE]`);
-    console.log(`Search query: "${q}"`);
-    console.log(`Found ${posts.length} posts in ${queryTime}ms`);
-    console.log(`Total database queries: ${queryCount}`);
-    console.log(`Average time per query: ${(queryTime / queryCount).toFixed(2)}ms`);
-    console.log(`========================================\n`);
+    const performanceLog = `
+========================================
+[SEARCH N+1 VERSION - CATASTROPHIC PERFORMANCE]
+Search query: "${q}"
+Found ${posts.length} posts in ${queryTime}ms
+Total database queries: ${queryCount}
+Average time per query: ${(queryTime / queryCount).toFixed(2)}ms
+========================================`;
+
+    console.log(performanceLog);
 
     res.json({
       posts,
@@ -276,6 +197,7 @@ router.get('/search', async (req, res) => {
         queryCount: queryCount,
         searchQuery: q,
         version: 'search-n+1',
+        performanceLog: performanceLog.trim(),
       },
     });
   } catch (error) {

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Copilot + MSSQL Demo Prompts v2</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1e1e1e;
+            color: #f0f0f0;
+            padding: 2rem;
+            margin: 0;
+        }
+        h1, h2 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #90cdf4;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+        .card {
+            background-color: #2e2e2e;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 6px solid #90cdf4;
+        }
+        .card h3 {
+            color: #ffffff;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .badge {
+            background-color: #ffd700;
+            color: #1e1e1e;
+            border-radius: 12px;
+            padding: 0.3rem 1rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .badge.followup {
+            background-color: #90cdf4;
+            color: #1e1e1e;
+        }
+        .card-description {
+            color: #b0b0b0;
+            font-size: 0.95rem;
+            margin: 1rem 0 1.5rem 0;
+            line-height: 1.6;
+        }
+        pre {
+            background-color: #111;
+            color: #eee;
+            padding: 1.5rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            position: relative;
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+            line-height: 1.6;
+        }
+        .copy-btn {
+            background-color: #90cdf4;
+            color: black;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+            margin-top: 0.5rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            background-color: #7bb3e0;
+        }
+        .copy-btn:active {
+            background-color: #6ba3d0;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 2rem;
+            background: #90cdf4;
+            color: black;
+            padding: 0.4rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 999;
+        }
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #555;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            z-index: 1000;
+        }
+        .section-header {
+            background-color: #1a1a1a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #90cdf4;
+        }
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: #90cdf4;
+        }
+        .checklist {
+            background-color: #1a1a1a;
+            padding: 1.2rem;
+            border-radius: 5px;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            border-left: 3px solid #90cdf4;
+        }
+        .checklist strong {
+            color: #90cdf4;
+        }
+        .checklist ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        .checklist li {
+            margin: 0.5rem 0;
+        }
+        .note {
+            background-color: #1a3a2a;
+            border-left: 3px solid #1dd1a1;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .warning {
+            background-color: #3a2a1a;
+            border-left: 3px solid #ff9800;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Light Mode</button>
+    <h1>🚀 Ignite 2025 - Database Performance Demo v2</h1>
+    <p class="subtitle">A Focused Demo: Using GitHub Copilot + MSSQL Extension to Diagnose and Fix N+1 Queries</p>
+
+    <div class="section-header">
+        <h2>📋 Demo Scenario</h2>
+    </div>
+    <div style="background-color: #2e2e2e; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <p style="margin: 0.5rem 0;"><strong>Problem:</strong> Your blog app's GET /api/posts endpoint is loading very slowly. You're a full stack developer but not a database expert. A mentor suggests: "Don't guess—connect to the database first using the MSSQL extension. Look for missing indexes AND check for N+1 query patterns in your ORM code. Then fix both."</p>
+        <p style="margin: 0.5rem 0;"><strong>Tech Stack:</strong> Prisma ORM + SQL Server (running in Docker)</p>
+        <p style="margin: 0.5rem 0;"><strong>Your Task:</strong> Use GitHub Copilot WITH the MSSQL extension to diagnose, explain, and fix the issue.</p>
+    </div>
+
+    <!-- MASTER PROMPT -->
+    <div class="section-header">
+        <h2>🎯 The Main Prompt</h2>
+    </div>
+
+    <div class="card">
+        <h3><span class="badge">MASTER PROMPT</span> Complete Database Performance Investigation</h3>
+        <p class="card-description">
+            This comprehensive prompt forces GitHub Copilot to connect to your database, analyze the schema, identify the N+1 problem, suggest fixes, and recommend indexing best practices. Use this for the full demo.
+        </p>
+        <pre id="master-prompt">I'm building a blog application with Prisma ORM and SQL Server. The GET /api/posts endpoint is loading extremely slowly, and I need your help diagnosing and fixing the issue. I'm a full stack developer but don't have much experience with databases. A mentor suggested: "Connect to the database first, check the schema and indexes, identify N+1 queries in the ORM code, then fix both the code AND the database."
+
+**MY SETUP:**
+- Database: blogdb (SQL Server running in a Docker container via the MSSQL extension)
+- ORM: Prisma with SQL Server provider
+- Backend: Node.js with Express
+- Problem: Loading ~1000 posts with related data is incredibly slow
+
+**MY FILES:**
+- Prisma schema: /app/backend/prisma/schema.prisma
+- Route handler: /app/backend/src/routes/posts.js
+- Database connection: Running locally via MSSQL Docker container
+
+**WHAT I NEED YOU TO DO (IN THIS ORDER):**
+
+1. **USE THE MSSQL EXTENSION TO CONNECT TO MY DATABASE:**
+   - Connect to the blogdb database using the MSSQL extension
+   - List all tables and their current indexes
+   - Show me what foreign key columns exist (authorId, postId, tagId, etc.)
+   - Identify which columns DON'T have indexes (especially foreign keys)
+
+2. **ANALYZE MY ORM CODE FOR N+1 QUERIES:**
+   - Look at my Prisma schema (/app/backend/prisma/schema.prisma) and understand all the relationships
+   - Review my GET /api/posts route handler (/app/backend/src/routes/posts.js)
+   - Explain: How many SQL queries will my current code generate when fetching ~1000 posts?
+   - Show me concrete examples of the "bad" queries (one for fetching posts, then separate queries for each post's authors, comments, tags)
+   - Explain the performance impact in simple terms
+
+3. **FIX THE ORM CODE:**
+   - Show me exactly how to refactor my /api/posts route using Prisma include() to eagerly load all related data
+   - Explain what SQL queries will be generated AFTER the fix
+   - Compare: How many queries will my code send to SQL Server before vs. after the fix?
+
+4. **RECOMMEND AND IMPLEMENT DATABASE INDEXES:**
+   - Identify which indexes are MISSING from my schema
+   - Explain why each index matters (especially for foreign keys and JOIN operations)
+   - Show me how to add proper indexes to my Prisma schema using @@index() decorators
+   - Explain what these indexes will improve (query speed, execution plans, etc.)
+
+5. **VERIFY THE FIX:**
+   - Guide me on how to use the MSSQL extension to verify my queries are now optimized
+   - What should I look for in the execution plan to confirm indexes are being used?
+   - What's a reasonable response time for loading posts with all related data?
+
+**CRITICAL REQUIREMENTS:**
+- Use the MSSQL extension to connect to blogdb and inspect actual database objects (don't just guess)
+- Show specific, concrete examples of bad vs. good SQL queries
+- Explain N+1 in simple terms (I'm not a database expert)
+- Provide exact code changes for both Prisma schema and route handler
+- Include best practices for indexes, query optimization, and ORM performance
+- Make it clear WHY each change matters</pre>
+        <button class="copy-btn" onclick="copyPrompt('master-prompt')">Copy</button>
+    </div>
+
+    <div class="note">
+        <strong>💡 How to Use This Prompt:</strong> Copy this prompt and paste it into GitHub Copilot. Copilot will guide you through connecting to your database, analyzing it, finding the problem, and implementing the fix. Watch as it uses the MSSQL extension to inspect your actual database schema.
+    </div>
+
+    <!-- OPTIONAL FOLLOW-UP PROMPTS -->
+    <div class="section-header">
+        <h2>🔄 Optional Follow-Up Prompts</h2>
+    </div>
+
+    <p style="text-align: center; color: #b0b0b0; margin-bottom: 2rem;">
+        Use these if you want to dive deeper into specific aspects during or after the main prompt.
+    </p>
+
+    <div class="card">
+        <h3><span class="badge followup">FOLLOW-UP 1</span> Deeper: Understanding the N+1 Problem</h3>
+        <p class="card-description">
+            If you want Copilot to provide an even more detailed breakdown of N+1 queries with visual examples.
+        </p>
+        <pre id="followup1">I'm trying to really understand the N+1 problem in my code. Can you:
+
+1. Draw or visualize what's happening:
+   - Show me step-by-step what SQL queries are running when I call GET /api/posts
+   - For each post loaded, what queries get executed?
+   - How many total queries run for 1000 posts?
+
+2. Explain the performance impact:
+   - How does N+1 affect database round-trips?
+   - Why does latency multiply with each extra query?
+   - What's the difference between 1 query vs. 1000+ queries?
+
+3. Show me the fix working:
+   - After I use include() in Prisma, how many queries will run?
+   - What's the SQL that gets generated with proper eager loading?
+   - Why is this dramatically faster?
+
+Make it visual and concrete so I really understand it.</pre>
+        <button class="copy-btn" onclick="copyPrompt('followup1')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3><span class="badge followup">FOLLOW-UP 2</span> Deeper: Indexes & Query Optimization</h3>
+        <p class="card-description">
+            For a detailed exploration of database indexes and how they impact query performance.
+        </p>
+        <pre id="followup2">I want to understand indexes better. Using my blogdb database (via MSSQL extension), can you:
+
+1. Show me the current execution plan:
+   - Connect to blogdb and run a simple query like "SELECT * FROM Post p LEFT JOIN Author a ON p.authorId = a.id"
+   - Show me the execution plan WITHOUT proper indexes
+   - What does a table scan look like vs. an index scan?
+
+2. Explain what indexes I need:
+   - For my Prisma relationships, which columns MUST have indexes?
+   - Should authorId, postId, tagId columns have individual indexes?
+   - When should I use composite indexes (multiple columns)?
+   - Are there any indexes I should NOT create?
+
+3. Show the improvement:
+   - After I add indexes to my schema, what will the execution plan look like?
+   - How will query performance change? (time, I/O, CPU)
+   - What's the trade-off of having too many indexes?
+
+Help me think like a database professional.</pre>
+        <button class="copy-btn" onclick="copyPrompt('followup2')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3><span class="badge followup">FOLLOW-UP 3</span> Verify & Monitor Performance</h3>
+        <p class="card-description">
+            For confirming that your fix actually works and learning how to monitor performance.
+        </p>
+        <pre id="followup3">I've made the code and schema changes. Now I want to verify everything is working and learn how to catch performance issues early. Can you guide me on:
+
+1. Using the MSSQL extension to verify the fix:
+   - How do I monitor the queries my application is sending?
+   - What should I look for to confirm indexes are being used?
+   - How can I compare query execution times before vs. after?
+   - What's a good benchmark for "acceptable" query performance?
+
+2. Setting up basic performance monitoring:
+   - How can I enable query logging in Prisma to see what SQL is generated?
+   - What metrics should I track for a blog application? (queries/request, execution time, etc.)
+   - How do I spot N+1 problems quickly in the future?
+
+3. Best practices going forward:
+   - How should I design queries from the start to avoid N+1?
+   - When reviewing code, what red flags should I look for?
+   - What's the balance between fetching too much data vs. too little?
+
+Make me a database performance detective.</pre>
+        <button class="copy-btn" onclick="copyPrompt('followup3')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3><span class="badge followup">FOLLOW-UP 4</span> Generate Schema Migrations</h3>
+        <p class="card-description">
+            For applying index changes to your database schema and generating Prisma migrations.
+        </p>
+        <pre id="followup4">I understand what indexes I need. Now help me apply them properly:
+
+1. Update my Prisma schema:
+   - Show me exactly where to add @@index() decorators in /app/backend/prisma/schema.prisma
+   - Which columns need indexes for optimal performance?
+   - How should I name these indexes so they're clear?
+
+2. Generate and run the migration:
+   - Generate a Prisma migration for these index changes
+   - Show me the SQL that will be executed
+   - How do I safely apply this migration to my local database?
+
+3. Verify the migration worked:
+   - How can I confirm the indexes were created using the MSSQL extension?
+   - How do I check if my tables now have the expected indexes?
+   - Can I query the database metadata to verify?
+
+Help me apply these changes properly without breaking anything.</pre>
+        <button class="copy-btn" onclick="copyPrompt('followup4')">Copy</button>
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ Important Notes:</strong>
+        <ul>
+            <li>Make sure your Docker container with the SQL Server database is running before starting</li>
+            <li>Have the MSSQL extension connected to your blogdb database</li>
+            <li>Keep your Prisma schema and route handler files open so Copilot can reference them</li>
+            <li>When Copilot suggests changes, review them carefully before applying to your code</li>
+        </ul>
+    </div>
+
+    <script>
+        function copyPrompt(promptId) {
+            const el = document.getElementById(promptId);
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const themeButton = document.querySelector('.theme-toggle');
+            const cards = document.querySelectorAll('.card');
+            const copyBtns = document.querySelectorAll('.copy-btn');
+            const pres = document.querySelectorAll('pre');
+            const toast = document.getElementById('toast');
+            const h1 = document.querySelector('h1');
+            const h2s = document.querySelectorAll('h2');
+            const h3s = document.querySelectorAll('h3');
+            const badges = document.querySelectorAll('.badge');
+            const sectionHeaders = document.querySelectorAll('.section-header');
+            const notes = document.querySelectorAll('.note');
+            const warnings = document.querySelectorAll('.warning');
+            const checklists = document.querySelectorAll('.checklist');
+            
+            if (body.style.backgroundColor === 'rgb(248, 249, 250)' || body.style.backgroundColor === '#f8f9fa') {
+                // Switch to dark mode
+                body.style.backgroundColor = '#1e1e1e';
+                body.style.color = '#f0f0f0';
+                themeButton.textContent = '🌓 Light Mode';
+                themeButton.style.backgroundColor = '#90cdf4';
+                themeButton.style.color = 'black';
+                
+                cards.forEach(card => {
+                    card.style.backgroundColor = '#2e2e2e';
+                    card.style.borderLeft = '6px solid #90cdf4';
+                });
+                
+                copyBtns.forEach(btn => {
+                    btn.style.backgroundColor = '#90cdf4';
+                    btn.style.color = 'black';
+                });
+                
+                pres.forEach(pre => {
+                    pre.style.backgroundColor = '#111';
+                    pre.style.color = '#eee';
+                });
+                
+                sectionHeaders.forEach(sh => {
+                    sh.style.backgroundColor = '#1a1a1a';
+                    sh.style.borderLeft = '4px solid #90cdf4';
+                });
+                
+                h1.style.color = '#ffffff';
+                h2s.forEach(h2 => h2.style.color = '#90cdf4');
+                h3s.forEach(h3 => h3.style.color = '#ffffff');
+                
+            } else {
+                // Switch to light mode
+                body.style.backgroundColor = '#f8f9fa';
+                body.style.color = '#333';
+                themeButton.textContent = '🌓 Dark Mode';
+                themeButton.style.backgroundColor = '#4f46e5';
+                themeButton.style.color = 'white';
+                
+                cards.forEach(card => {
+                    card.style.backgroundColor = 'white';
+                    card.style.borderLeft = '6px solid #4f46e5';
+                });
+                
+                copyBtns.forEach(btn => {
+                    btn.style.backgroundColor = '#4f46e5';
+                    btn.style.color = 'white';
+                });
+                
+                pres.forEach(pre => {
+                    pre.style.backgroundColor = '#282c34';
+                    pre.style.color = '#f8f8f2';
+                });
+                
+                sectionHeaders.forEach(sh => {
+                    sh.style.backgroundColor = '#f0f0f0';
+                    sh.style.borderLeft = '4px solid #4f46e5';
+                });
+                
+                h1.style.color = '#333';
+                h2s.forEach(h2 => h2.style.color = '#4f46e5');
+                h3s.forEach(h3 => h3.style.color = '#333');
+            }
+        }
+    </script>
+
+    <div id="toast" style="
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #555;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        opacity: 0;
+        transition: opacity 0.4s ease-in-out;
+        z-index: 1000;
+    ">
+    📋 Copied to clipboard!
+    </div>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Copilot Demo Prompts</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1e1e1e;
+            color: #f0f0f0;
+            padding: 2rem;
+            margin: 0;
+        }
+        h1, h2 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .card {
+            background-color: #2e2e2e;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-left: 6px solid #90cdf4;
+        }
+        .card h3 {
+            color: #ffffff;
+            margin-top: 0;
+        }
+        pre {
+            background-color: #111;
+            color: #eee;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            position: relative;
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+        }
+        .copy-btn {
+            background-color: #90cdf4;
+            color: black;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
+        .copy-btn:hover {
+            background-color: #7bb3e0;
+        }
+        .copy-btn:active {
+            background-color: #6ba3d0;
+        }
+        .copied {
+            background-color: #1a7f37 !important;
+            color: white !important;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 2rem;
+            background: #90cdf4;
+            color: black;
+            padding: 0.4rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #555;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Light Mode</button>
+    <h1>🚀 Ignite 2025 - MSSQL + GitHub Copilot Demo Prompts</h1>
+
+    <div class="card">
+        <h3>🔹 1. Initial Problem Report</h3>
+        <pre id="prompt1">I'm getting complaints that the main posts page in my app is loading really slowly. The frontend seems fine and the HTTP requests look normal, but something is definitely wrong. I'm not an expert with databases, but someone told me the issue is likely in my database since the backend is what's causing the slowdown. I'm using a blogdb database running in a Docker container for my local development. Can you connect to my database and help me figure out what's causing this performance issue?</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt1')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 2. Database-First Investigation</h3>
+        <pre id="prompt2">I suspect the issue is with the GET /api/posts endpoint, but I'm not really good with databases. Someone told me I should check the database first since that's usually where performance problems hide. Can you connect to my local blogdb database (running in a Docker container created by the MSSQL extension) and analyze what's happening when posts are loaded? I'm using Prisma ORM so I don't write SQL directly, but I'd like to understand what queries are actually running.</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt2')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 2.5. Database Analysis Before Code Review</h3>
+        <pre id="prompt2_5">I'm having performance issues and I'm not a database expert. A colleague told me: "Don't look at the code first - connect to the database and see what's actually happening there." Can you connect to my blogdb database (running in a Docker container via the MSSQL extension) and analyze the current database activity, query patterns, and performance metrics? I want to understand what the database is doing before we look at any application code.</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt2_5')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 3. Understanding N+1 Queries</h3>
+        <pre id="prompt3">I keep hearing about something called "N+1 queries" but I don't really understand what that means. Is that what's happening here? Can you explain it in simple terms and show me what SQL is actually being generated?</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt3')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 4. Getting the Fix</h3>
+        <pre id="prompt4">Okay, now I understand the problem. How do I fix this? Can you show me how to change my Prisma query to get all the data in one go instead of making all these separate database calls?</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt4')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 5. Database Performance Investigation</h3>
+        <pre id="prompt5">My database queries seem really slow in general. I'm not a database expert, but someone suggested I should start by analyzing what's actually happening in the database rather than just looking at code. Can you connect to my blogdb database (running in a local Docker container) and check what's going on? Maybe look at active queries, query execution times, or whatever database experts usually check first?</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt5')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 6. Understanding Indexes</h3>
+        <pre id="prompt6">I keep hearing that indexes can make databases faster, but I don't really understand them. Can you look at my blogdb database (in my local dev environment Docker container) and tell me if I'm missing any important indexes that would help with performance?</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt6')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 7. Overall Database Health</h3>
+        <pre id="prompt7">My blogdb database (running in a Docker container in my local dev environment) feels sluggish overall. Is there some kind of general maintenance or cleanup I should be doing to keep it running well? I'm not sure what database maintenance even involves.</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt7')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 8. Investigating Slow Query</h3>
+        <pre id="prompt8">I'm not a database expert, but I think this specific query is taking forever in my blogdb database: SELECT * FROM Post p LEFT JOIN Author a ON p.authorId = a.id. Can you connect to my database (running in a local Docker container) and analyze why this query is so slow? Maybe check the execution plan, indexes, or whatever database professionals look at to diagnose performance issues?</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt8')">Copy</button>
+    </div>
+
+    <div class="card">
+        <h3>🔹 9. Setting Up Monitoring</h3>
+        <pre id="prompt9">I want to start monitoring my blogdb database performance (running in my local Docker container) but I don't know where to begin. What should I be tracking to catch performance problems early, and how do I set that up for a development environment?</pre>
+        <button class="copy-btn" onclick="copyPrompt('prompt9')">Copy</button>
+    </div>
+
+    <script>
+        function copyPrompt(promptId) {
+            const el = document.getElementById(promptId);
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const themeButton = document.querySelector('.theme-toggle');
+            const cards = document.querySelectorAll('.card');
+            const copyBtns = document.querySelectorAll('.copy-btn');
+            const pres = document.querySelectorAll('pre');
+            const toast = document.getElementById('toast');
+            const h1 = document.querySelector('h1');
+            const h3s = document.querySelectorAll('h3');
+            
+            if (body.style.backgroundColor === 'rgb(248, 249, 250)' || body.style.backgroundColor === '#f8f9fa') {
+                // Switch to dark mode
+                body.style.backgroundColor = '#1e1e1e';
+                body.style.color = '#f0f0f0';
+                themeButton.textContent = '🌓 Light Mode';
+                themeButton.style.backgroundColor = '#90cdf4';
+                themeButton.style.color = 'black';
+                
+                cards.forEach(card => {
+                    card.style.backgroundColor = '#2e2e2e';
+                    card.style.borderLeft = '6px solid #90cdf4';
+                });
+                
+                copyBtns.forEach(btn => {
+                    btn.style.backgroundColor = '#90cdf4';
+                    btn.style.color = 'black';
+                });
+                
+                pres.forEach(pre => {
+                    pre.style.backgroundColor = '#111';
+                    pre.style.color = '#eee';
+                });
+                
+                toast.style.backgroundColor = '#555';
+                h1.style.color = '#ffffff';
+                h3s.forEach(h3 => h3.style.color = '#ffffff');
+                
+            } else {
+                // Switch to light mode
+                body.style.backgroundColor = '#f8f9fa';
+                body.style.color = '#333';
+                themeButton.textContent = '🌓 Dark Mode';
+                themeButton.style.backgroundColor = '#4f46e5';
+                themeButton.style.color = 'white';
+                
+                cards.forEach(card => {
+                    card.style.backgroundColor = 'white';
+                    card.style.borderLeft = '6px solid #4f46e5';
+                });
+                
+                copyBtns.forEach(btn => {
+                    btn.style.backgroundColor = '#4f46e5';
+                    btn.style.color = 'white';
+                });
+                
+                pres.forEach(pre => {
+                    pre.style.backgroundColor = '#282c34';
+                    pre.style.color = '#f8f8f2';
+                });
+                
+                toast.style.backgroundColor = '#323232';
+                h1.style.color = '#333';
+                h3s.forEach(h3 => h3.style.color = '#333');
+            }
+        }
+    </script>
+
+    <div id="toast" style="
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #555;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        opacity: 0;
+        transition: opacity 0.4s ease-in-out;
+        z-index: 1000;
+    ">
+    📋 Copied to clipboard!
+    </div>
+</body>
+</html>

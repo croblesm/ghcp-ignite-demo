@@ -29,6 +29,11 @@ function App() {
       setPosts(data.posts);
       setMeta(data.meta);
       setFetchedAt(new Date().toLocaleTimeString());
+
+      // Log performance data to browser console
+      if (data.meta?.performanceLog) {
+        console.log(data.meta.performanceLog);
+      }
     } catch (err) {
       setError(err.message);
       console.error('Error fetching posts:', err);
@@ -59,6 +64,11 @@ function App() {
       setPosts(data.posts);
       setMeta(data.meta);
       setFetchedAt(new Date().toLocaleTimeString());
+
+      // Log performance data to browser console
+      if (data.meta?.performanceLog) {
+        console.log(data.meta.performanceLog);
+      }
     } catch (err) {
       setError(err.message);
       console.error('Error searching posts:', err);
