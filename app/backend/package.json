@@ -1,0 +1,25 @@
+{
+  "name": "blog-backend",
+  "version": "1.0.0",
+  "description": "Express + Prisma backend for N+1 demo",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node src/index.js",
+    "seed": "node prisma/seed-diverse.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed-diverse.js"
+  },
+  "keywords": ["express", "prisma", "sqlserver", "n+1"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.9.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "prisma": "^5.9.1"
+  }
+}

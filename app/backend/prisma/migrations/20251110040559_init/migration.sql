@@ -1,0 +1,39 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- CreateTable
+CREATE TABLE [dbo].[Author] (
+    [id] INT NOT NULL IDENTITY(1,1),
+    [name] NVARCHAR(255) NOT NULL,
+    [email] NVARCHAR(255) NOT NULL,
+    [createdAt] DATETIME2 NOT NULL CONSTRAINT [Author_createdAt_df] DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT [Author_pkey] PRIMARY KEY CLUSTERED ([id]),
+    CONSTRAINT [Author_email_key] UNIQUE NONCLUSTERED ([email])
+);
+
+-- CreateTable
+CREATE TABLE [dbo].[Post] (
+    [id] INT NOT NULL IDENTITY(1,1),
+    [title] NVARCHAR(500) NOT NULL,
+    [content] NVARCHAR(max) NOT NULL,
+    [authorId] INT NOT NULL,
+    [createdAt] DATETIME2 NOT NULL CONSTRAINT [Post_createdAt_df] DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT [Post_pkey] PRIMARY KEY CLUSTERED ([id])
+);
+
+-- AddForeignKey
+ALTER TABLE [dbo].[Post] ADD CONSTRAINT [Post_authorId_fkey] FOREIGN KEY ([authorId]) REFERENCES [dbo].[Author]([id]) ON DELETE NO ACTION ON UPDATE CASCADE;
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH
